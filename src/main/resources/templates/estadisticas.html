@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas - Liquidaciones App</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+        .container { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: fixed; height: 100vh; overflow-y: auto; }
+        .sidebar h2 { margin-bottom: 30px; text-align: center; font-size: 24px; }
+        .nav-menu { list-style: none; }
+        .nav-menu li { margin-bottom: 15px; }
+        .nav-menu a { color: white; text-decoration: none; padding: 12px 15px; border-radius: 5px; display: block; transition: background 0.3s; cursor: pointer; }
+        .nav-menu a:hover, .nav-menu a.active { background: rgba(255, 255, 255, 0.2); }
+        .logout-btn { margin-top: 30px; width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.3s; }
+        .logout-btn:hover { background: rgba(255, 255, 255, 0.3); }
+        .main-content { margin-left: 260px; flex: 1; padding: 20px; }
+        .top-bar { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .filters { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .filter-group { display: flex; flex-direction: column; gap: 6px; }
+        .filter-group label { font-weight: 600; color: #444; }
+        .filter-group input { padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; min-width: 140px; }
+        .btn-primary { padding: 12px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-primary:hover { transform: translateY(-1px); }
+        .message { padding: 12px 15px; margin-bottom: 15px; border-radius: 5px; display: none; }
+        .message.show { display: block; }
+        .message.error { background: #f8d7da; color: #721c24; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; }
+        .card h3 { font-size: 18px; color: #333; }
+        .table-mini { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .table-mini th, .table-mini td { padding: 6px 8px; border-bottom: 1px solid #eef1f6; text-align: right; }
+        .table-mini th:first-child, .table-mini td:first-child { text-align: left; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 12px; background: #eef1f6; color: #555; font-size: 12px; }
+        .empty-state { text-align: center; padding: 40px; color: #999; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        @media (max-width: 768px) { .sidebar { width: 100%; height: auto; position: static; } .main-content { margin-left: 0; } .charts-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <h2>🚚 Liquidaciones</h2>
+        <ul class="nav-menu">
+            <li><a onclick="goToPage('dashboard')">📊 Dashboard</a></li>
+            <li><a onclick="goToPage('camiones')">🚛 Camiones</a></li>
+            <li><a onclick="goToPage('conductores')">👥 Conductores</a></li>
+            <li><a onclick="goToPage('viajes')">🛣️ Viajes</a></li>
+            <li><a onclick="goToPage('liquidaciones')">💰 Liquidaciones</a></li>
+            <li><a onclick="goToPage('estadisticas')" class="active">📈 Estadísticas</a></li>
+        </ul>
+        <button class="logout-btn" onclick="logout()">🚪 Cerrar Sesión</button>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <h1>📈 Estadísticas por Camión</h1>
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="anio">Año</label>
+                    <input type="number" id="anio" min="2000" max="2100">
+                </div>
+                <button class="btn-primary" onclick="cargarEstadisticas()">Actualizar</button>
+            </div>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div id="chartsContainer" class="charts-grid">
+            <div class="empty-state">Selecciona un año para ver las estadísticas</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const monthLabels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const charts = {};
+
+    function checkAuth() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+        }
+    }
+
+    function getAuthHeader() {
+        return {
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'Content-Type': 'application/json'
+        };
+    }
+
+    // Manejo centralizado de sesión expirada (401)
+    function handleSessionExpired() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        localStorage.removeItem('rol');
+        showMessage('⚠️ Sesión expirada. Por favor inicia sesión nuevamente.', 'error');
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 2000);
+    }
+
+    function goToPage(page) {
+        window.location.href = '/' + page;
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        localStorage.removeItem('rol');
+        window.location.href = '/login';
+    }
+
+    function showMessage(text, type = 'error') {
+        const msg = document.getElementById('message');
+        msg.textContent = text;
+        msg.className = `message show ${type}`;
+        setTimeout(() => msg.classList.remove('show'), 4000);
+    }
+
+    function setDefaultYear() {
+        const input = document.getElementById('anio');
+        const year = new Date().getFullYear();
+        input.value = year;
+    }
+
+    function cargarEstadisticas() {
+        const anio = document.getElementById('anio').value || new Date().getFullYear();
+        fetch(`/api/estadisticas/camiones?anio=${anio}`, { headers: getAuthHeader() })
+            .then(r => {
+                if (r.status === 401) {
+                    handleSessionExpired();
+                    throw new Error('Sesión expirada');
+                }
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(data => renderCharts(data))
+            .catch(error => {
+                if (error.message !== 'Sesión expirada') {
+                    showMessage('No se pudieron cargar las estadísticas: ' + error.message);
+                }
+            });
+    }
+
+    function renderCharts(data) {
+        const container = document.getElementById('chartsContainer');
+        container.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="empty-state">No hay datos para este año</div>';
+            return;
+        }
+
+        const porCamion = {};
+        data.forEach(item => {
+            if (!porCamion[item.camionId]) {
+                porCamion[item.camionId] = { placa: item.camionPlaca, meses: Array(12).fill(null) };
+            }
+            porCamion[item.camionId].meses[item.mes - 1] = item;
+        });
+
+        Object.values(porCamion).forEach(camion => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const canvasId = `chart-${camion.placa}`.replace(/\s+/g, '-');
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <h3>Camión ${camion.placa}</h3>
+                    <span class="badge">Utilidad = Flete - Gastos - Pago Conductor</span>
+                </div>
+                <canvas id="${canvasId}" height="220"></canvas>
+                <table class="table-mini">
+                    <thead>
+                        <tr><th>Mes</th><th>Flete</th><th>Gastos</th><th>Pago Conductor</th><th>Utilidad</th></tr>
+                    </thead>
+                    <tbody id="tbl-${canvasId}"></tbody>
+                </table>
+            `;
+            container.appendChild(card);
+
+            const meses = camion.meses.map((m, idx) => m || {
+                totalFlete: 0, totalGastos: 0, totalPagoConductor: 0, utilidadNeta: 0, mes: idx + 1
+            });
+
+            const flete = meses.map(m => Number(m.totalFlete || 0));
+            const gastos = meses.map(m => Number(m.totalGastos || 0));
+            const pago = meses.map(m => Number(m.totalPagoConductor || 0));
+            const utilidad = meses.map(m => Number(m.utilidadNeta || 0));
+
+            const ctx = document.getElementById(canvasId);
+            if (charts[canvasId]) {
+                charts[canvasId].destroy();
+            }
+
+            charts[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthLabels,
+                    datasets: [
+                        { label: 'Flete', data: flete, backgroundColor: '#3498db' },
+                        { label: 'Gastos', data: gastos, backgroundColor: '#e74c3c' },
+                        { label: 'Pago Conductor', data: pago, backgroundColor: '#f1c40f', borderColor: '#b7950b', borderWidth: 1 },
+                        { label: 'Utilidad', data: utilidad, backgroundColor: '#27ae60' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            const tbody = document.getElementById(`tbl-${canvasId}`);
+            tbody.innerHTML = meses.map(m => `
+                <tr>
+                    <td style="text-align:left;">${monthLabels[m.mes - 1]}</td>
+                    <td>$${Number(m.totalFlete || 0).toLocaleString('es-CO')}</td>
+                    <td>$${Number(m.totalGastos || 0).toLocaleString('es-CO')}</td>
+                    <td>$${Number(m.totalPagoConductor || 0).toLocaleString('es-CO')}</td>
+                    <td>$${Number(m.utilidadNeta || 0).toLocaleString('es-CO')}</td>
+                </tr>
+            `).join('');
+        });
+    }
+
+    checkAuth();
+    setDefaultYear();
+    cargarEstadisticas();
+</script>
+</body>
+</html>

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viajes - Liquidaciones App</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+        .container { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: fixed; height: 100vh; overflow-y: auto; }
+        .sidebar h2 { margin-bottom: 30px; text-align: center; font-size: 24px; }
+        .nav-menu { list-style: none; }
+        .nav-menu li { margin-bottom: 15px; }
+        .nav-menu a { color: white; text-decoration: none; padding: 12px 15px; border-radius: 5px; display: block; transition: background 0.3s; cursor: pointer; }
+        .nav-menu a:hover, .nav-menu a.active { background: rgba(255, 255, 255, 0.2); }
+        .logout-btn { margin-top: 30px; width: 100%; padding: 12px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.3s; }
+        .logout-btn:hover { background: rgba(255,255,255,0.3); }
+        .main-content { margin-left: 260px; flex: 1; padding: 20px; }
+        .top-bar { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .top-bar h1 { font-size: 28px; color: #333; }
+        .btn-new { padding: 12px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: transform 0.2s; }
+        .btn-new:hover { transform: translateY(-2px); }
+        .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead { background: #f5f7fa; }
+        th { padding: 15px; text-align: left; font-weight: 600; color: #333; border-bottom: 2px solid #e0e0e0; }
+        td { padding: 15px; border-bottom: 1px solid #e0e0e0; }
+        tr:hover { background: #f9f9f9; }
+        .btn-small { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-delete { background: #e74c3c; color: white; }
+        .btn-delete:hover { background: #c0392b; }
+        .btn-edit { background: #f1c40f; color: #4a3b00; }
+        .btn-edit:hover { background: #d4ac0d; }
+        .btn-view { background: #3498db; color: white; }
+    </style>
+    <style>
+        .btn-view:hover {
+            background: #2c80b5;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 1100px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .message {
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pendiente {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-en_curso {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .status-finalizado {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-cancelado {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .form-row, .form-row-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .top-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>🚚 Liquidaciones</h2>
+            <ul class="nav-menu">
+                <li><a onclick="goToPage('dashboard')">📊 Dashboard</a></li>
+                <li><a onclick="goToPage('camiones')">🚛 Camiones</a></li>
+                <li><a onclick="goToPage('conductores')">👥 Conductores</a></li>
+                <li><a onclick="goToPage('viajes')" class="active">🛣️ Viajes</a></li>
+                <li><a onclick="goToPage('liquidaciones')">💰 Liquidaciones</a></li>
+                <li><a onclick="goToPage('estadisticas')">📈 Estadísticas</a></li>
+            </ul>
+            <button class="logout-btn" onclick="logout()">🚪 Cerrar Sesión</button>
+        </div>
+
+        <div class="main-content">
+            <div class="top-bar">
+                <h1>🛣️ Registro de Viajes</h1>
+                <button class="btn-new" onclick="openModalNew()">+ Nuevo Viaje</button>
+            </div>
+
+            <div class="message" id="message"></div>
+
+            <div class="table-container">
+                <table id="viagesTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Camión</th>
+                            <th>Conductor</th>
+                            <th>Origen → Destino</th>
+                            <th>Flete</th>
+                            <th>Pago Conductor</th>
+                            <th>Gastos Totales</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="viagesBody">
+                        <tr>
+                            <td colspan="9" class="empty-state">
+                                <p>No hay viajes registrados</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear viaje -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nuevo Viaje</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="viajeForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fechaViaje">Fecha del Viaje *</label>
+                        <input type="date" id="fechaViaje" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="camionId">Camión *</label>
+                        <select id="camionId" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="conductorId">Conductor *</label>
+                        <select id="conductorId" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="empresaCliente">Empresa Cliente *</label>
+                        <input type="text" id="empresaCliente" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="origen">Origen *</label>
+                        <input type="text" id="origen" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="destino">Destino *</label>
+                        <input type="text" id="destino" required>
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="producto">Producto *</label>
+                        <input type="text" id="producto" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="peso">Peso (kg)</label>
+                        <input type="number" id="peso" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="numeroRemision">Número Remisión</label>
+                        <input type="text" id="numeroRemision">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="manifiesto">Manifiesto</label>
+                        <input type="text" id="manifiesto">
+                    </div>
+                    <div class="form-group">
+                        <label for="transporteConductor">Transporte Conductor</label>
+                        <input type="number" id="transporteConductor" step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="valorFlete">Valor Flete *</label>
+                        <input type="number" id="valorFlete" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="anticipo">Anticipo</label>
+                        <input type="number" id="anticipo" step="0.01">
+                    </div>
+                </div>
+                
+                <p style="color: #666; font-size: 13px; margin-top: -10px; margin-bottom: 15px;">
+                    <i>El % del conductor se toma automáticamente de su perfil</i>
+                </p>
+
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">Gastos del Viaje</h3>
+                
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="valorAcpm">ACPM</label>
+                        <input type="number" id="valorAcpm" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="valorPeajes">Peajes</label>
+                        <input type="number" id="valorPeajes" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="valorCargue">Cargue</label>
+                        <input type="number" id="valorCargue" step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="valorDescargue">Descargue</label>
+                        <input type="number" id="valorDescargue" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="valorParqueo">Parqueo</label>
+                        <input type="number" id="valorParqueo" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="otrosGastos">Otros Gastos</label>
+                        <input type="number" id="otrosGastos" step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="valorMontajeLlantas">Montaje de Llantas</label>
+                        <input type="number" id="valorMontajeLlantas" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="valorCambioAceite">Cambio de Aceite</label>
+                        <input type="number" id="valorCambioAceite" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="valorLavada">Lavada</label>
+                        <input type="number" id="valorLavada" step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="valorEngrase">Engrase</label>
+                        <input type="number" id="valorEngrase" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="valorTensionFrenos">Tensión de Frenos</label>
+                        <input type="number" id="valorTensionFrenos" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="descripcionOtros">Descripción Otros</label>
+                        <input type="text" id="descripcionOtros">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="estado">Estado *</label>
+                    <select id="estado" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="PENDIENTE">Pendiente</option>
+                        <option value="EN_CURSO">En Curso</option>
+                        <option value="FINALIZADO">Finalizado</option>
+                        <option value="CANCELADO">Cancelado</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-submit">Guardar Viaje</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de detalle -->
+    <div class="modal" id="viewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Detalle del Viaje</h2>
+                <button class="close-btn" onclick="closeViewModal()">&times;</button>
+            </div>
+            <div id="detalleViaje" class="detalle-grid"></div>
+        </div>
+    </div>
+
+    <style>
+        .detalle-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 20px;
+            word-break: break-word;
+        }
+
+        .detalle-grid .full-row {
+            grid-column: 1 / span 2;
+        }
+    </style>
+
+    <script>
+        let editingId = null;
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+            }
+        }
+
+        function getAuthHeader() {
+            return {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function loadCamionesYConductores(selectedCamionId, selectedConductorId) {
+            fetch('/api/camiones', { headers: getAuthHeader() })
+                .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                .then(camiones => {
+                    if (!Array.isArray(camiones)) throw new Error('La API de camiones no devolvió una lista');
+                    const select = document.getElementById('camionId');
+                    select.innerHTML = '<option value="">Seleccionar...</option>';
+                    camiones.forEach(c => {
+                        select.innerHTML += `<option value="${c.id}">${c.placa} - ${c.marca}</option>`;
+                    });
+                    if (selectedCamionId) {
+                        select.value = selectedCamionId;
+                    }
+                });
+
+            fetch('/api/conductores', { headers: getAuthHeader() })
+                .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                .then(conductores => {
+                    if (!Array.isArray(conductores)) throw new Error('La API de conductores no devolvió una lista');
+                    const select = document.getElementById('conductorId');
+                    select.innerHTML = '<option value="">Seleccionar...</option>';
+                    conductores.forEach(c => {
+                        select.innerHTML += `<option value="${c.id}">${c.nombre} ${c.apellido}</option>`;
+                    });
+                    if (selectedConductorId) {
+                        select.value = selectedConductorId;
+                    }
+                });
+        }
+
+        function loadViajes() {
+            fetch('/api/viajes', { headers: getAuthHeader() })
+                .then(r => r.json())
+                .then(data => {
+                    const tbody = document.getElementById('viagesBody');
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><p>No hay viajes registrados</p></td></tr>';
+                    } else {
+                        tbody.innerHTML = data.map(v => `
+                            <tr>
+                                <td>${v.fechaViaje}</td>
+                                <td>${v.camionPlaca || 'N/A'}</td>
+                                <td>${v.conductorNombre || 'N/A'}</td>
+                                <td>${v.origen} → ${v.destino}</td>
+                                <td>$${Number(v.valorFlete).toLocaleString('es-CO')}</td>
+                                <td>$${Number((v.pagoConductor || 0)).toLocaleString('es-CO')}</td>
+                                <td>$${Number((v.totalGastos || 0)).toLocaleString('es-CO')}</td>
+                                <td><span class="status-badge status-${v.estado.toLowerCase()}">${v.estado}</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-edit" onclick="editViaje(${v.id})">Editar</button>
+                                        <button class="btn-small btn-view" onclick="viewViaje(${v.id})">Ver</button>
+                                        <button class="btn-small btn-delete" onclick="deleteViaje(${v.id})">Eliminar</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                   })
+                   .catch(error => {
+                       if (error.message !== 'Sesión expirada') {
+                           showMessage('Error al cargar viajes: ' + error.message, 'error');
+                       }
+                   });
+        }
+
+        function openModalNew() {
+            editingId = null;
+            document.getElementById('modalTitle').textContent = 'Nuevo Viaje';
+            document.getElementById('viajeForm').reset();
+            document.getElementById('modal').classList.add('active');
+            loadCamionesYConductores();
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        function deleteViaje(id) {
+            if (!confirm('¿Eliminar este viaje?')) return;
+            fetch(`/api/viajes/${id}`, { method: 'DELETE', headers: getAuthHeader() })
+                    .then(r => {
+                        if (r.status === 401) {
+                            handleSessionExpired();
+                            throw new Error('Sesión expirada');
+                        }
+                        if (!r.ok) throw new Error('HTTP ' + r.status);
+                        showMessage('Viaje eliminado', 'success');
+                    loadViajes();
+                    })
+                    .catch(error => {
+                        if (error.message !== 'Sesión expirada') {
+                            showMessage('Error al eliminar viaje: ' + error.message, 'error');
+                        }
+                    });
+        }
+
+        document.getElementById('viajeForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const payload = {
+                fechaViaje: document.getElementById('fechaViaje').value,
+                camionId: parseInt(document.getElementById('camionId').value),
+                conductorId: parseInt(document.getElementById('conductorId').value),
+                origen: document.getElementById('origen').value,
+                destino: document.getElementById('destino').value,
+                producto: document.getElementById('producto').value,
+                peso: document.getElementById('peso').value ? parseFloat(document.getElementById('peso').value) : null,
+                numeroRemision: document.getElementById('numeroRemision').value || null,
+                manifiesto: document.getElementById('manifiesto').value || null,
+                empresaCliente: document.getElementById('empresaCliente').value,
+                valorFlete: parseFloat(document.getElementById('valorFlete').value),
+                anticipo: document.getElementById('anticipo').value ? parseFloat(document.getElementById('anticipo').value) : null,
+                transporteConductor: document.getElementById('transporteConductor').value ? parseFloat(document.getElementById('transporteConductor').value) : null,
+                valorAcpm: document.getElementById('valorAcpm').value ? parseFloat(document.getElementById('valorAcpm').value) : null,
+                valorPeajes: document.getElementById('valorPeajes').value ? parseFloat(document.getElementById('valorPeajes').value) : null,
+                valorCargue: document.getElementById('valorCargue').value ? parseFloat(document.getElementById('valorCargue').value) : null,
+                valorDescargue: document.getElementById('valorDescargue').value ? parseFloat(document.getElementById('valorDescargue').value) : null,
+                valorParqueo: document.getElementById('valorParqueo').value ? parseFloat(document.getElementById('valorParqueo').value) : null,
+                valorMontajeLlantas: document.getElementById('valorMontajeLlantas').value ? parseFloat(document.getElementById('valorMontajeLlantas').value) : null,
+                valorCambioAceite: document.getElementById('valorCambioAceite').value ? parseFloat(document.getElementById('valorCambioAceite').value) : null,
+                valorLavada: document.getElementById('valorLavada').value ? parseFloat(document.getElementById('valorLavada').value) : null,
+                valorEngrase: document.getElementById('valorEngrase').value ? parseFloat(document.getElementById('valorEngrase').value) : null,
+                valorTensionFrenos: document.getElementById('valorTensionFrenos').value ? parseFloat(document.getElementById('valorTensionFrenos').value) : null,
+                otrosGastos: document.getElementById('otrosGastos').value ? parseFloat(document.getElementById('otrosGastos').value) : null,
+                descripcionOtros: document.getElementById('descripcionOtros').value || null,
+                estado: document.getElementById('estado').value
+            };
+
+            const url = editingId ? `/api/viajes/${editingId}` : '/api/viajes';
+            const method = editingId ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: getAuthHeader(),
+                body: JSON.stringify(payload)
+            })
+            .then(r => {
+                if (r.status === 401) {
+                    handleSessionExpired();
+                    throw new Error('Sesión expirada');
+                }
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(() => {
+                showMessage(editingId ? 'Viaje actualizado correctamente' : 'Viaje creado correctamente', 'success');
+                closeModal();
+                loadViajes();
+            })
+            .catch(error => {
+                if (error.message !== 'Sesión expirada') {
+                    showMessage('Error: ' + error.message, 'error');
+                }
+            });
+        });
+
+        function editViaje(id) {
+            fetch(`/api/viajes/${id}`, { headers: getAuthHeader() })
+                .then(r => {
+                    if (r.status === 401) {
+                        handleSessionExpired();
+                        throw new Error('Sesión expirada');
+                    }
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(v => {
+                    editingId = id;
+                    document.getElementById('modalTitle').textContent = 'Editar Viaje';
+                    fillForm(v);
+                    document.getElementById('modal').classList.add('active');
+                    loadCamionesYConductores(v.camionId, v.conductorId);
+                })
+                .catch(error => {
+                    if (error.message !== 'Sesión expirada') {
+                        showMessage('Error al cargar viaje: ' + error.message, 'error');
+                    }
+                });
+        }
+
+        function fillForm(v) {
+            document.getElementById('fechaViaje').value = v.fechaViaje || '';
+            document.getElementById('camionId').value = v.camionId || '';
+            document.getElementById('conductorId').value = v.conductorId || '';
+            document.getElementById('empresaCliente').value = v.empresaCliente || '';
+            document.getElementById('origen').value = v.origen || '';
+            document.getElementById('destino').value = v.destino || '';
+            document.getElementById('producto').value = v.producto || '';
+            document.getElementById('peso').value = v.peso || '';
+            document.getElementById('numeroRemision').value = v.numeroRemision || '';
+            document.getElementById('manifiesto').value = v.manifiesto || '';
+            document.getElementById('valorFlete').value = v.valorFlete || '';
+            document.getElementById('anticipo').value = v.anticipo || '';
+            document.getElementById('transporteConductor').value = v.transporteConductor || '';
+            document.getElementById('valorAcpm').value = v.valorAcpm || '';
+            document.getElementById('valorPeajes').value = v.valorPeajes || '';
+            document.getElementById('valorCargue').value = v.valorCargue || '';
+            document.getElementById('valorDescargue').value = v.valorDescargue || '';
+            document.getElementById('valorParqueo').value = v.valorParqueo || '';
+            document.getElementById('valorMontajeLlantas').value = v.valorMontajeLlantas || '';
+            document.getElementById('valorCambioAceite').value = v.valorCambioAceite || '';
+            document.getElementById('valorLavada').value = v.valorLavada || '';
+            document.getElementById('valorEngrase').value = v.valorEngrase || '';
+            document.getElementById('valorTensionFrenos').value = v.valorTensionFrenos || '';
+            document.getElementById('otrosGastos').value = v.otrosGastos || '';
+            document.getElementById('descripcionOtros').value = v.descripcionOtros || '';
+            document.getElementById('estado').value = v.estado || '';
+        }
+
+        function viewViaje(id) {
+            fetch(`/api/viajes/${id}`, { headers: getAuthHeader() })
+                .then(r => r.json())
+                .then(v => {
+                    const d = document.getElementById('detalleViaje');
+                    d.innerHTML = `
+                        <div><strong>Fecha:</strong> ${v.fechaViaje || ''}</div>
+                        <div><strong>Estado:</strong> ${v.estado || ''}</div>
+                        <div><strong>Camión:</strong> ${v.camionPlaca || ''}</div>
+                        <div><strong>Conductor:</strong> ${v.conductorNombre || ''}</div>
+                        <div><strong>Origen:</strong> ${v.origen || ''}</div>
+                        <div><strong>Destino:</strong> ${v.destino || ''}</div>
+                        <div><strong>Empresa:</strong> ${v.empresaCliente || ''}</div>
+                        <div><strong>Producto:</strong> ${v.producto || ''}</div>
+                        <div><strong>Peso:</strong> ${v.peso || ''}</div>
+                        <div><strong>Flete:</strong> $${Number(v.valorFlete || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Anticipo:</strong> $${Number(v.anticipo || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Pago Conductor:</strong> $${Number(v.pagoConductor || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Gastos Totales:</strong> $${Number(v.totalGastos || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>ACPM:</strong> $${Number(v.valorAcpm || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Peajes:</strong> $${Number(v.valorPeajes || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Cargue:</strong> $${Number(v.valorCargue || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Descargue:</strong> $${Number(v.valorDescargue || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Parqueo:</strong> $${Number(v.valorParqueo || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Transporte Conductor:</strong> $${Number(v.transporteConductor || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Montaje Llantas:</strong> $${Number(v.valorMontajeLlantas || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Cambio Aceite:</strong> $${Number(v.valorCambioAceite || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Lavada:</strong> $${Number(v.valorLavada || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Engrase:</strong> $${Number(v.valorEngrase || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Tensión Frenos:</strong> $${Number(v.valorTensionFrenos || 0).toLocaleString('es-CO')}</div>
+                        <div><strong>Otros Gastos:</strong> $${Number(v.otrosGastos || 0).toLocaleString('es-CO')}</div>
+                        <div class="full-row"><strong>Descripción Otros:</strong> ${v.descripcionOtros || ''}</div>
+                        <div><strong>Remisión:</strong> ${v.numeroRemision || ''}</div>
+                        <div><strong>Manifiesto:</strong> ${v.manifiesto || ''}</div>
+                    `;
+                    document.getElementById('viewModal').classList.add('active');
+                });
+        }
+
+        function closeViewModal() {
+            document.getElementById('viewModal').classList.remove('active');
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message show ${type}`;
+            setTimeout(() => msg.classList.remove('show'), 4000);
+        }
+
+        function goToPage(page) {
+            window.location.href = '/' + page;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            localStorage.removeItem('rol');
+            window.location.href = '/login';
+        }
+
+        checkAuth();
+        loadViajes();
+    </script>
+</body>
+</html>

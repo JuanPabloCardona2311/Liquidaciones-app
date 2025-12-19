@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camiones - Liquidaciones App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-menu li {
+            margin-bottom: 15px;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            padding: 12px 15px;
+            border-radius: 5px;
+            display: block;
+            transition: background 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .logout-btn {
+            margin-top: 30px;
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 20px;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top-bar h1 {
+            font-size: 28px;
+            color: #333;
+        }
+
+        .btn-new {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn-new:hover {
+            transform: translateY(-2px);
+        }
+
+        .table-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f5f7fa;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            margin: 0 3px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .btn-edit {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #5568d3;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+        }
+
+        .message {
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-activo {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactivo {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-mantenimiento {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .top-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .btn-new {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>🚚 Liquidaciones</h2>
+            <ul class="nav-menu">
+                <li><a onclick="goToPage('dashboard')">📊 Dashboard</a></li>
+                <li><a onclick="goToPage('camiones')" class="active">🚛 Camiones</a></li>
+                <li><a onclick="goToPage('conductores')">👥 Conductores</a></li>
+                <li><a onclick="goToPage('viajes')">🛣️ Viajes</a></li>
+                <li><a onclick="goToPage('liquidaciones')">💰 Liquidaciones</a></li>
+                <li><a onclick="goToPage('estadisticas')">📈 Estadísticas</a></li>
+            </ul>
+            <button class="logout-btn" onclick="logout()">🚪 Cerrar Sesión</button>
+        </div>
+
+        <div class="main-content">
+            <div class="top-bar">
+                <h1>🚛 Gestión de Camiones</h1>
+                <button class="btn-new" onclick="openModalNew()">+ Nuevo Camión</button>
+            </div>
+
+            <div class="message" id="message"></div>
+
+            <div class="table-container">
+                <table id="camionesTable">
+                    <thead>
+                        <tr>
+                            <th>Placa</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Color</th>
+                            <th>Año</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="camionesBody">
+                        <tr>
+                            <td colspan="7" class="empty-state">
+                                <div class="empty-state-icon">🚚</div>
+                                <p>No hay camiones registrados</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear/editar -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nuevo Camión</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="camionForm">
+                <!-- Fila 1: Placa | Marca -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="placa">Placa *</label>
+                        <input type="text" id="placa" name="placa" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="marca">Marca *</label>
+                        <input type="text" id="marca" name="marca" required>
+                    </div>
+                </div>
+
+                <!-- Fila 2: Línea | Año de fabricación (Modelo para ti) -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="modelo">Línea *</label>
+                        <input type="text" id="modelo" name="modelo" placeholder="Ej: FH 460, Actros 2545" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="anio">Año de fabricación *</label>
+                        <input type="number" id="anio" name="anio" min="1900" max="2100" placeholder="Ej: 2014, 2015" required>
+                    </div>
+                </div>
+
+                <!-- Fila 3: Color | Estado -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="color">Color *</label>
+                        <input type="text" id="color" name="color" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="estado">Estado *</label>
+                        <select id="estado" name="estado" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="ACTIVO">Activo</option>
+                            <option value="INACTIVO">Inactivo</option>
+                            <option value="MANTENIMIENTO">Mantenimiento</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let editingId = null;
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+            }
+        }
+
+        function getAuthHeader() {
+            return {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function handleSessionExpired() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            localStorage.removeItem('rol');
+            showMessage('⚠️ Sesión expirada. Por favor inicia sesión nuevamente.', 'error');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+        }
+
+        function loadCamiones() {
+            fetch('/api/camiones', {
+                headers: getAuthHeader()
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    handleSessionExpired();
+                    throw new Error('Sesión expirada');
+                }
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                if (!Array.isArray(data)) throw new Error('La API no devolvió una lista');
+                const tbody = document.getElementById('camionesBody');
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="empty-state">
+                        <div class="empty-state-icon">🚚</div>
+                        <p>No hay camiones registrados</p>
+                    </td></tr>`;
+                } else {
+                    tbody.innerHTML = data.map(camion => `
+                        <tr>
+                            <td>${camion.placa}</td>
+                            <td>${camion.marca}</td>
+                            <td>${camion.modelo}</td>
+                            <td>${camion.color}</td>
+                            <td>${camion.anio}</td>
+                            <td><span class="status-badge status-${camion.estado.toLowerCase()}">${camion.estado}</span></td>
+                            <td>
+                                <button class="btn-small btn-edit" onclick="editCamion(${camion.id})">Editar</button>
+                                <button class="btn-small btn-delete" onclick="deleteCamion(${camion.id})">Eliminar</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            })
+            .catch(error => {
+                if (error.message !== 'Sesión expirada') {
+                    showMessage('Error al cargar camiones: ' + error.message, 'error');
+                }
+            });
+        }
+
+        function openModalNew() {
+            editingId = null;
+            document.getElementById('modalTitle').textContent = 'Nuevo Camión';
+            document.getElementById('camionForm').reset();
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            editingId = null;
+        }
+
+        function editCamion(id) {
+            fetch(`/api/camiones/${id}`, {
+                headers: getAuthHeader()
+            })
+            .then(response => response.json())
+            .then(camion => {
+                editingId = id;
+                document.getElementById('modalTitle').textContent = 'Editar Camión';
+                document.getElementById('placa').value = camion.placa;
+                document.getElementById('marca').value = camion.marca;
+                document.getElementById('modelo').value = camion.modelo;
+                document.getElementById('color').value = camion.color;
+                document.getElementById('anio').value = camion.anio;
+                document.getElementById('estado').value = camion.estado;
+                document.getElementById('modal').classList.add('active');
+            })
+            .catch(error => showMessage('Error al cargar camión: ' + error.message, 'error'));
+        }
+
+        function deleteCamion(id) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este camión?')) return;
+
+            fetch(`/api/camiones/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeader()
+            })
+            .then(() => {
+                showMessage('Camión eliminado correctamente', 'success');
+                loadCamiones();
+            })
+            .catch(error => showMessage('Error al eliminar: ' + error.message, 'error'));
+        }
+
+        document.getElementById('camionForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const payload = {
+                placa: document.getElementById('placa').value,
+                marca: document.getElementById('marca').value,
+                modelo: document.getElementById('modelo').value,
+                color: document.getElementById('color').value,
+                anio: parseInt(document.getElementById('anio').value),
+                estado: document.getElementById('estado').value
+            };
+
+            const url = editingId ? `/api/camiones/${editingId}` : '/api/camiones';
+            const method = editingId ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: getAuthHeader(),
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(() => {
+                showMessage(editingId ? 'Camión actualizado' : 'Camión creado', 'success');
+                closeModal();
+                loadCamiones();
+            })
+            .catch(error => showMessage('Error: ' + error.message, 'error'));
+        });
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message show ${type}`;
+            setTimeout(() => msg.classList.remove('show'), 4000);
+        }
+
+        function goToPage(page) {
+            window.location.href = '/' + page;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            localStorage.removeItem('rol');
+            window.location.href = '/login';
+        }
+
+        checkAuth();
+        loadCamiones();
+    </script>
+</body>
+</html>
